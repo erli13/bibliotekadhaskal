@@ -1,6 +1,8 @@
+import { config } from "dotenv";
+config();
+
 import { PrismaClient } from "../app/generated/prisma/client";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
-import { createClient } from "@libsql/client";
 import { parse } from "csv-parse";
 import { createReadStream } from "fs";
 import { resolve, dirname } from "path";
@@ -8,13 +10,6 @@ import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CSV_PATH = resolve(__dirname, "../data/Copy of Table1.csv");
-
-const client = createClient({
-  url: process.env.TURSO_DATABASE_URL!,
-  authToken: process.env.TURSO_AUTH_TOKEN,
-});
-const adapter = new PrismaLibSql(client);
-const prisma = new PrismaClient({ adapter });
 
 function normalizeString(value: string | undefined): string | null {
   if (!value) return null;
@@ -28,6 +23,12 @@ function parseQuantity(value: string): number {
 }
 
 async function main() {
+  const adapter = new PrismaLibSql({
+    url: process.env.TURSO_DATABASE_URL!,
+    authToken: process.env.TURSO_AUTH_TOKEN,
+  });
+  const prisma = new PrismaClient({ adapter });
+
   const records: Record<string, string>[] = await new Promise((resolve, reject) => {
     const rows: Record<string, string>[] = [];
     createReadStream(CSV_PATH)
@@ -77,11 +78,7 @@ async function main() {
   }
 
   console.log(`Done. Inserted: ${inserted}, Skipped: ${skipped}`);
+  await prisma.$disconnect();
 }
 
-main()
-  .catch((err) => {
-    console.error("Fatal:", err);
-    process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+main().catch((e) => { console.error("Fatal:", e); process.exit(1); });
