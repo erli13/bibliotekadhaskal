@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 type Book = {
@@ -137,7 +137,7 @@ function Pagination({
   );
 }
 
-export default function Home() {
+function Catalog() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -302,5 +302,13 @@ export default function Home() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense>
+      <Catalog />
+    </Suspense>
   );
 }
