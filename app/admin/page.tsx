@@ -106,7 +106,10 @@ function AdminCatalog() {
               {data ? `${data.total.toLocaleString()} books total` : "Loading…"}
             </p>
           </div>
-          <a href="/" className="text-sm text-blue-600 hover:underline">← Back to catalog</a>
+          <div className="flex items-center gap-4 text-sm">
+            <a href="/admin/enrich" className="text-indigo-600 font-medium hover:underline">Enrich Books →</a>
+            <a href="/" className="text-gray-500 hover:underline">Catalog</a>
+          </div>
         </div>
       </header>
 

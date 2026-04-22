@@ -23,6 +23,16 @@ export async function GET(request: NextRequest) {
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       orderBy: { title: "asc" },
+      select: {
+        id: true,
+        title: true,
+        author: true,
+        quantity: true,
+        location: true,
+        genre: true,
+        coverUrl: true,
+        description: true,
+      },
     }),
     prisma.book.count({ where }),
   ]);

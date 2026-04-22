@@ -10,6 +10,8 @@ type Book = {
   quantity: number;
   location: string;
   genre: string | null;
+  coverUrl: string | null;
+  description: string | null;
 };
 
 type ApiResponse = {
@@ -68,46 +70,239 @@ function CategoryPills({
 
 // ── Book card ─────────────────────────────────────────────────────────────────
 
-function BookCard({ book }: { book: Book }) {
+// Deterministic fallback color from title's first character
+const FALLBACK_PALETTES = [
+  { bg: "bg-indigo-600",  letter: "text-indigo-100"  },
+  { bg: "bg-rose-600",    letter: "text-rose-100"    },
+  { bg: "bg-emerald-600", letter: "text-emerald-100" },
+  { bg: "bg-amber-500",   letter: "text-amber-100"   },
+  { bg: "bg-violet-600",  letter: "text-violet-100"  },
+  { bg: "bg-teal-600",    letter: "text-teal-100"    },
+  { bg: "bg-orange-600",  letter: "text-orange-100"  },
+  { bg: "bg-sky-600",     letter: "text-sky-100"     },
+];
+
+function CoverImage({ book }: { book: Book }) {
+  const palette =
+    FALLBACK_PALETTES[(book.title.toUpperCase().charCodeAt(0) - 65) % FALLBACK_PALETTES.length] ??
+    FALLBACK_PALETTES[0];
+
   return (
-    <article className="
-      group flex flex-col gap-3 rounded-xl
-      border-2 border-slate-800 bg-white p-5
-      transition-all duration-200 ease-out
-      hover:-translate-y-1 hover:scale-[1.02] hover:border-indigo-500
-      cursor-default
-    ">
-      <div className="flex-1">
-        <h2 className="text-base font-extrabold leading-snug tracking-tight text-slate-900 line-clamp-2 group-hover:text-indigo-600 transition-colors">
-          {book.title}
-        </h2>
-        {book.author && (
-          <p className="mt-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400 line-clamp-1">
-            {book.author}
-          </p>
-        )}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-1.5">
-        <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-600">
-          <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
-          </svg>
-          {book.location}
-        </span>
-
-        {book.genre && (
-          <span className="rounded-md border border-violet-200 bg-violet-50 px-2 py-0.5 text-xs font-semibold text-violet-700">
-            {book.genre}
+    // 2:3 book aspect ratio
+    <div className="relative w-full overflow-hidden rounded-lg border-b-2 border-slate-800" style={{ aspectRatio: "2/3" }}>
+      {book.coverUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={book.coverUrl}
+          alt={book.title}
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+        />
+      ) : (
+        <div className={`absolute inset-0 flex flex-col items-center justify-center gap-3 ${palette.bg}`}>
+          {/* Geometric accent squares */}
+          <div className="absolute -right-3 -top-3 h-12 w-12 rotate-12 rounded-md bg-white/10" />
+          <div className="absolute -bottom-2 -left-2 h-8 w-8 rounded-md bg-black/10" />
+          {/* First letter */}
+          <span className={`relative z-10 select-none text-6xl font-black leading-none ${palette.letter}`}>
+            {book.title[0]?.toUpperCase() ?? "?"}
           </span>
-        )}
+        </div>
+      )}
+    </div>
+  );
+}
 
-        <span className="ml-auto shrink-0 rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-bold text-slate-500">
-          ×{book.quantity}
-        </span>
+function BookCard({ book, onClick }: { book: Book; onClick: () => void }) {
+  return (
+    <article
+      onClick={onClick}
+      className="
+        group flex flex-col rounded-xl
+        border-2 border-slate-800 bg-white overflow-hidden
+        transition-all duration-200 ease-out
+        hover:-translate-y-1 hover:scale-[1.02] hover:border-indigo-500
+        cursor-pointer
+      "
+    >
+      <CoverImage book={book} />
+
+      <div className="flex flex-1 flex-col gap-3 p-4">
+        <div>
+          <h2 className="text-sm font-extrabold leading-snug tracking-tight text-slate-900 line-clamp-2 group-hover:text-indigo-600 transition-colors">
+            {book.title}
+          </h2>
+          {book.author && (
+            <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-400 line-clamp-1">
+              {book.author}
+            </p>
+          )}
+          {book.description && (
+            <p className="mt-2 text-xs leading-relaxed text-slate-500 line-clamp-2">
+              {book.description}
+            </p>
+          )}
+        </div>
+
+        <div className="mt-auto flex flex-wrap items-center gap-1.5">
+          <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-600">
+            <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+            </svg>
+            {book.location}
+          </span>
+
+          {book.genre && (
+            <span className="rounded-md border border-violet-200 bg-violet-50 px-2 py-0.5 text-xs font-semibold text-violet-700">
+              {book.genre}
+            </span>
+          )}
+
+          <span className="ml-auto shrink-0 rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-bold text-slate-500">
+            ×{book.quantity}
+          </span>
+        </div>
       </div>
     </article>
+  );
+}
+
+// ── Book detail modal ─────────────────────────────────────────────────────────
+
+function BookDetailModal({ book, onClose }: { book: Book; onClose: () => void }) {
+  const palette =
+    FALLBACK_PALETTES[(book.title.toUpperCase().charCodeAt(0) - 65) % FALLBACK_PALETTES.length] ??
+    FALLBACK_PALETTES[0];
+
+  // ESC to close
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  // Lock body scroll
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center sm:justify-center sm:p-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      {/* Panel — bottom sheet on mobile, centered card on sm+ */}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={book.title}
+        className="
+          relative z-10 w-full bg-white
+          rounded-t-2xl border-t-2 border-x-2 border-slate-800
+          max-h-[88vh] overflow-y-auto
+          sm:rounded-2xl sm:border-2 sm:max-w-2xl sm:max-h-[85vh]
+          flex flex-col
+        "
+      >
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 border-slate-800 bg-white text-slate-800 hover:bg-slate-800 hover:text-white transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        {/* Drag handle (mobile hint) */}
+        <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-slate-300 sm:hidden" />
+
+        {/* Content */}
+        <div className="flex flex-col gap-6 p-6 pt-5 sm:flex-row">
+
+          {/* Cover */}
+          <div className="mx-auto w-40 shrink-0 sm:mx-0 sm:w-[180px]">
+            <div
+              className="relative w-full overflow-hidden rounded-xl border-2 border-slate-800"
+              style={{ aspectRatio: "2/3" }}
+            >
+              {book.coverUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={book.coverUrl}
+                  alt={book.title}
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              ) : (
+                <div className={`absolute inset-0 flex items-center justify-center ${palette.bg}`}>
+                  <div className="absolute -right-3 -top-3 h-14 w-14 rotate-12 rounded-md bg-white/10" />
+                  <div className="absolute -bottom-3 -left-2 h-10 w-10 rounded-md bg-black/10" />
+                  <span className={`relative z-10 select-none text-7xl font-black leading-none ${palette.letter}`}>
+                    {book.title[0]?.toUpperCase() ?? "?"}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Details */}
+          <div className="flex flex-1 flex-col gap-4 min-w-0">
+            <div>
+              <h2 className="text-xl font-black leading-tight tracking-tight text-slate-900 pr-8">
+                {book.title}
+              </h2>
+              {book.author && (
+                <p className="mt-1.5 text-sm font-semibold uppercase tracking-wider text-slate-400">
+                  {book.author}
+                </p>
+              )}
+            </div>
+
+            {book.description && (
+              <>
+                <hr className="border-slate-200" />
+                <p className="text-sm leading-relaxed text-slate-600">
+                  {book.description}
+                </p>
+              </>
+            )}
+
+            <hr className="border-slate-200 mt-auto" />
+
+            {/* Meta chips */}
+            <div className="flex flex-wrap gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-lg border-2 border-slate-800 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700">
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                </svg>
+                {book.location}
+              </span>
+
+              <span className="inline-flex items-center gap-1.5 rounded-lg border-2 border-slate-800 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700">
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+                </svg>
+                {book.quantity} {book.quantity === 1 ? "kopje" : "kopje"}
+              </span>
+
+              {book.genre && (
+                <span className="inline-flex items-center rounded-lg border-2 border-violet-400 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700">
+                  {book.genre}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -253,6 +448,7 @@ function Catalog() {
   const [query, setQuery] = useState(initialQuery);
   const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const catalogRef = useRef<HTMLDivElement>(null);
 
@@ -437,16 +633,23 @@ function Catalog() {
         {loading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {Array.from({ length: 24 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-36 animate-pulse rounded-xl border-2 border-slate-200 bg-slate-100"
-              />
+              <div key={i} className="rounded-xl border-2 border-slate-200 bg-white overflow-hidden">
+                {/* cover placeholder */}
+                <div className="w-full animate-pulse bg-slate-100" style={{ aspectRatio: "2/3" }} />
+                {/* text placeholder */}
+                <div className="p-4 space-y-2">
+                  <div className="h-4 animate-pulse rounded bg-slate-100 w-3/4" />
+                  <div className="h-3 animate-pulse rounded bg-slate-100 w-1/2" />
+                  <div className="h-3 animate-pulse rounded bg-slate-100 w-full" />
+                  <div className="h-3 animate-pulse rounded bg-slate-100 w-5/6" />
+                </div>
+              </div>
             ))}
           </div>
         ) : data && data.books.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {data.books.map((book) => (
-              <BookCard key={book.id} book={book} />
+              <BookCard key={book.id} book={book} onClick={() => setSelectedBook(book)} />
             ))}
           </div>
         ) : (
@@ -460,6 +663,11 @@ function Catalog() {
           </div>
         )}
       </main>
+
+      {/* ── Book detail modal ── */}
+      {selectedBook && (
+        <BookDetailModal book={selectedBook} onClose={() => setSelectedBook(null)} />
+      )}
 
       {/* ── Footer ── */}
       <footer className="border-t-2 border-slate-800 bg-white">
